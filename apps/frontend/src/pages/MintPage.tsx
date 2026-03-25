@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { MintStepper } from '@/components/MintStepper'
-import { ErrorHandler, AppError } from '@/utils/errorHandler'
+import { AppError } from '@/utils/errorHandler'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
-import { OptimizedImage } from '@/components/ui/OptimizedImage'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 
 export function MintPage() {
   const [error, setError] = useState<AppError | null>(null)
@@ -13,6 +13,13 @@ export function MintPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="mobile-container">
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Create' },
+        ]} />
+      </div>
+
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {error && (
           <div className="mb-4 sm:mb-6">
