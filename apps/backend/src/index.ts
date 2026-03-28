@@ -1,93 +1,61 @@
 import express from 'express'
 import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import compression from 'compression'
-import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
-
-import { errorHandler } from '@/middleware/errorHandler'
-import { notFound } from '@/middleware/notFound'
-import cacheService from '@/services/cacheService'
-import { createLogger } from '@/utils/logger'
-import artworkRoutes from '@/routes/artwork'
-import userRoutes from '@/routes/user'
-import aiRoutes from '@/routes/ai'
-import metadataRoutes from '@/routes/metadata'
-import cacheRoutes from '@/routes/cache'
-import imageOptimizerRoutes from '@/routes/imageOptimizer'
-import authRoutes from '@/routes/auth'
-
 import mongoose from 'mongoose'
+import authRoutes from './routes/auth'
+import artworkRoutes from './routes/artwork'
+import userRoutes from './routes/user'
+import aiRoutes from './routes/ai'
+import metadataRoutes from './routes/metadata'
+import cacheRoutes from './routes/cache'
+import imageOptimizerRoutes from './routes/imageOptimizer'
+import favoriteRoutes from './routes/favorites'
+import { notFoundHandler } from './middleware/notFound'
+import { errorHandler } from './middleware/errorHandler'
 
+// Load environment variables
 dotenv.config()
 
-const logger = createLogger('Server')
-
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 3001
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/muse'
 
-// Connect to MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => logger.info('✅ Successfully connected to MongoDB'))
-  .catch((err) => logger.error('❌ Error connecting to MongoDB:', err))
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests from this IP, please try again later.',
-})
-
-app.use(helmet())
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-}))
-app.use(compression())
-app.use(morgan('combined'))
-app.use(limiter)
-app.use(express.json({ limit: '10mb' }))
+// Middleware
+app.use(cors())
+app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'muse-backend',
-  })
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-app.use('/api/artworks', artworkRoutes)
-app.use('/api/users', userRoutes)
+// API Routes
+app.use('/api/auth', authRoutes)
+app.use('/api/artwork', artworkRoutes)
+app.use('/api/user', userRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/metadata', metadataRoutes)
 app.use('/api/cache', cacheRoutes)
-app.use('/api/auth', authRoutes)
-app.use('/api', imageOptimizerRoutes)
+app.use('/api/images', imageOptimizerRoutes)
+app.use('/api/favorites', favoriteRoutes)
 
-app.use(notFound)
+// Error handling
+app.use(notFoundHandler)
 app.use(errorHandler)
 
-app.listen(PORT, () => {
-  logger.info(`🚀 Muse Backend API running on port ${PORT}`)
-  logger.info(`📊 Health check: http://localhost:${PORT}/health`)
-  logger.info(`🗄️ Cache stats: ${JSON.stringify(cacheService.getCacheStats())}`)
-})
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully')
-  await cacheService.disconnect()
-  await mongoose.disconnect()
-  process.exit(0)
-})
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully')
-  await cacheService.disconnect()
-  await mongoose.disconnect()
-  process.exit(0)
-})
+// Database connection and server start
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB')
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
+    })
+  })
+  .catch((error) => {
+    console.error('MongoDB connection error:', error)
+    process.exit(1)
+  })
 
 export default app

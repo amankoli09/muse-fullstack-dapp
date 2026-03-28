@@ -1,9 +1,16 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Navigation } from './components/composite/Navigation';
-import { ArtworkPage } from './pages/ArtworkPage';
-import SearchTest from './pages/SearchTest';
-import { useTranslation } from 'react-i18next';
+
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { NotificationProvider } from '@/contexts/NotificationContext'
+import { ToastNotifications } from '@/components/Notifications/ToastNotifications'
+import { Navigation } from '@/components/composite/Navigation'
+import { HomePage } from '@/pages/HomePage'
+import { ExplorePage } from '@/pages/ExplorePage'
+import { MintPage } from '@/pages/MintPage'
+import { ProfilePage } from '@/pages/ProfilePage'
+import { UserSettingsPage } from '@/pages/UserSettingsPage'
+import { useTranslation } from 'react-i18next'
+import SearchTest from './pages/SearchTest'
+import { ArtworkPage } from './pages/ArtworkPage'
 
 function App() {
   const { i18n } = useTranslation();
@@ -48,6 +55,25 @@ function App() {
       </div>
     </div>
   );
+  return (
+    <NotificationProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <main>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/mint" element={<MintPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<UserSettingsPage />} />
+            </Routes>
+          </main>
+          <ToastNotifications />
+        </div>
+      </Router>
+    </NotificationProvider>
+  )
 }
 
-export default App;
+export default App
